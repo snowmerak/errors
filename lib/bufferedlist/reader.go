@@ -14,21 +14,10 @@ type Reader struct {
 }
 
 func (b *BufferedList) Reader() *Reader {
-	reader := &Reader{
-		head: newNode(),
-		tail: nil,
+	return &Reader{
+		head: b.head,
+		tail: b.tail,
 	}
-	reader.tail = reader.head
-
-	for n := b.head; n != nil; n = n.next {
-		copy(reader.tail.data[:], n.data[:])
-		reader.tail.lastIndex = n.lastIndex
-		if n.next != nil {
-			reader.tail.next = newNode()
-		}
-	}
-
-	return reader
 }
 
 func (r *Reader) Seek(offset int64, _ int) (int64, error) {
@@ -80,14 +69,4 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 	}
 
 	return n, nil
-}
-
-func (r *Reader) Free() {
-	for n := r.head; n != nil; {
-		next := n.next
-		popNode(n)
-		n = next
-	}
-	r.head = nil
-	r.tail = nil
 }

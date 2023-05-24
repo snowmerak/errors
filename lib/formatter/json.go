@@ -2,17 +2,30 @@ package formatter
 
 import (
 	"encoding/base64"
+	"errors"
 	"io"
 	"runtime"
 	"strconv"
 )
 
+var errDuplicatedKey = errors.New("duplicated key")
+
+func IsDuplicatedKeyErr(err error) bool {
+	return errors.Is(err, errDuplicatedKey)
+}
+
+var _ Formatter = (*JsonFormatter)(nil)
+
 type JsonFormatter struct {
 	writer   io.Writer
 	elements int
+	keys     map[string]struct{}
 }
 
 func (j *JsonFormatter) writeKey(key string) (int, error) {
+	if _, ok := j.keys[key]; ok {
+		return 0, errDuplicatedKey
+	}
 	n := 0
 	if j.elements > 0 {
 		written, err := j.writer.Write([]byte{','})
@@ -222,7 +235,7 @@ func (j *JsonFormatter) Caller() (int, error) {
 		return n, err
 	}
 	n += written
-	_, file, line, ok := runtime.Caller(1)
+	_, file, line, ok := runtime.Caller(2)
 	switch ok {
 	case true:
 		written, err = j.writer.Write([]byte{'"'})
@@ -285,7 +298,7 @@ func (j *JsonFormatter) Msg(s string) (int, error) {
 	return n, nil
 }
 
-func NewJsonFormatter(writer io.Writer) (*JsonFormatter, error) {
+func NewJsonFormatter(writer io.Writer) (Formatter, error) {
 	if n, err := writer.Write([]byte("{")); err != nil {
 		return nil, err
 	} else if n != 1 {
@@ -293,5 +306,6 @@ func NewJsonFormatter(writer io.Writer) (*JsonFormatter, error) {
 	}
 	return &JsonFormatter{
 		writer: writer,
+		keys:   map[string]struct{}{},
 	}, nil
 }

@@ -6,6 +6,7 @@ import (
 	"io"
 	"runtime"
 	"strconv"
+	"strings"
 )
 
 var errDuplicatedKey = errors.New("duplicated key")
@@ -199,32 +200,38 @@ func (j *JsonFormatter) Bool(s string, b bool) (int, error) {
 	return n, nil
 }
 
-func (j *JsonFormatter) Err(s string, err error) (int, error) {
+func (j *JsonFormatter) Err(s string, parentErr error) (int, error) {
 	n := 0
 	written, err := j.writeKey(s)
 	if err != nil {
 		return n, err
 	}
 	n += written
-	written, err = j.writer.Write([]byte{'"'})
-	if err != nil {
-		return n, err
-	}
-	n += written
-	switch err.(type) {
+	content := ""
+	switch parentErr.(type) {
 	case nil:
 	default:
-		written, err = j.writer.Write([]byte(err.Error()))
+		content = parentErr.Error()
+	}
+	if !(strings.HasPrefix(content, "{") && strings.HasSuffix(content, "}")) {
+		written, err = j.writer.Write([]byte{'"'})
 		if err != nil {
 			return n, err
 		}
 		n += written
 	}
-	written, err = j.writer.Write([]byte{'"'})
+	written, err = j.writer.Write([]byte(content))
 	if err != nil {
 		return n, err
 	}
 	n += written
+	if !(strings.HasPrefix(content, "{") && strings.HasSuffix(content, "}")) {
+		written, err = j.writer.Write([]byte{'"'})
+		if err != nil {
+			return n, err
+		}
+		n += written
+	}
 	return n, nil
 }
 

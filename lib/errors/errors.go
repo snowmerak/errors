@@ -7,72 +7,78 @@ import (
 	"strings"
 )
 
-type Errors struct {
-	formatter formatter.Formatter
-	buffer    *bufferedlist.BufferedList
+type Error struct {
+	formatter   formatter.Formatter
+	buffer      *bufferedlist.BufferedList
+	parentError error
 }
 
-func New(formatter func(io.Writer) (formatter.Formatter, error)) *Errors {
+func New(formatter func(io.Writer) (formatter.Formatter, error)) *Error {
 	bl := bufferedlist.New()
 	f, _ := formatter(bl)
-	err := &Errors{
+	err := &Error{
 		formatter: f,
 		buffer:    bl,
 	}
 	return err
 }
 
-func (e *Errors) Byte(s string, b byte) *Errors {
+func (e *Error) Byte(s string, b byte) *Error {
 	_, _ = e.formatter.Byte(s, b)
 	return e
 }
 
-func (e *Errors) Bytes(s string, b []byte) *Errors {
+func (e *Error) Bytes(s string, b []byte) *Error {
 	_, _ = e.formatter.Bytes(s, b)
 	return e
 }
 
-func (e *Errors) Float64(s string, f float64) *Errors {
+func (e *Error) Float64(s string, f float64) *Error {
 	_, _ = e.formatter.Float64(s, f)
 	return e
 }
 
-func (e *Errors) Int64(s string, i int64) *Errors {
+func (e *Error) Int64(s string, i int64) *Error {
 	_, _ = e.formatter.Int64(s, i)
 	return e
 }
 
-func (e *Errors) Uint64(s string, u uint64) *Errors {
+func (e *Error) Uint64(s string, u uint64) *Error {
 	_, _ = e.formatter.Uint64(s, u)
 	return e
 }
 
-func (e *Errors) String(s string, s2 string) *Errors {
+func (e *Error) String(s string, s2 string) *Error {
 	_, _ = e.formatter.String(s, s2)
 	return e
 }
 
-func (e *Errors) Bool(s string, b bool) *Errors {
+func (e *Error) Bool(s string, b bool) *Error {
 	_, _ = e.formatter.Bool(s, b)
 	return e
 }
 
-func (e *Errors) Err(s string, err error) *Errors {
+func (e *Error) Err(s string, err error) *Error {
 	_, _ = e.formatter.Err(s, err)
+	e.parentError = err
 	return e
 }
 
-func (e *Errors) Caller() *Errors {
+func (e *Error) Caller() *Error {
 	_, _ = e.formatter.Caller()
 	return e
 }
 
-func (e *Errors) Msg(s string) *Errors {
+func (e *Error) Msg(s string) *Error {
 	_, _ = e.formatter.Msg(s)
 	return e
 }
 
-func (e *Errors) Error() string {
+func (e *Error) Unwrap() error {
+	return e.parentError
+}
+
+func (e *Error) Error() string {
 	builder := &strings.Builder{}
 	reader := e.buffer.Reader()
 	buf := [1024]byte{}
@@ -86,6 +92,19 @@ func (e *Errors) Error() string {
 		}
 		_, _ = builder.Write(buf[:n])
 	}
-	e.buffer.Free()
 	return builder.String()
+}
+
+func (e *Error) MoveTo(writer io.Writer) error {
+	reader := e.buffer.Reader()
+	if _, err := io.Copy(writer, reader); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *Error) Free() {
+	e.buffer.Free()
+	e.buffer = nil
+	e.parentError = nil
 }

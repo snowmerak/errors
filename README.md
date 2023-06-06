@@ -2,25 +2,25 @@
 
 errors is a simple error handling library for Go.
 
-## Install
+## install
 
 ```bash
 go get github.com/snowmerak/errors
 ```
 
-## Usage
+## features
 
-```go
-package main
+### Errors
 
-import (
-    "fmt"
+- `New` - create a new error with message
+- `Wrap` - wrap some errors into new error
+- `Is` - check if error is equal to some error
+- `As` - check if error is equal to some error type
+- `Unwrap` - get the previous error
+- `(e *Errors) Unwrap` - get the previous errors of Errors
+- `Join` - join some errors into new Errors
 
-    "github.com/snowmerak/errors"
-)
+### Structured Errors
 
-func main() {
-    err := errors.New("error message")
-    fmt.Println(err.Error()) // error message
-}
-```
+- `From` - create a new structured error with message
+- `Get` - get the value of some key

@@ -132,19 +132,18 @@ func Join(err ...error) *Errors {
 			return nil
 		}
 		return &Errors{err: err[0]}
-	default:
-		parents := make([]error, 0, len(err))
-		for _, e := range err {
-			if e != nil {
-				parents = append(parents, e)
-			}
-		}
-		if len(parents) >= 2 {
-			return &Errors{
-				err:     parents[0],
-				parents: parents[1:],
-			}
-		}
-		return Join(parents...)
 	}
+	parents := make([]error, 0, len(err))
+	for _, e := range err {
+		if e != nil {
+			parents = append(parents, e)
+		}
+	}
+	if len(parents) >= 2 {
+		return &Errors{
+			err:     parents[0],
+			parents: parents[1:],
+		}
+	}
+	return Join(parents...)
 }

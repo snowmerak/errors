@@ -37,7 +37,7 @@ func (e *StructuredError) Error() string {
 	buffer := strings.Builder{}
 	c := false
 	for key, value := range e.fields {
-		if !c {
+		if c {
 			buffer.WriteString("&")
 		}
 		buffer.WriteString(key)
@@ -109,10 +109,10 @@ func Get[T any](err error, key string) (T, bool) {
 	}
 	switch ue := err.(type) {
 	case interface{ Unwrap() error }:
-		return Get(ue.Unwrap(), key)
+		return Get[T](ue.Unwrap(), key)
 	case interface{ Unwrap() []error }:
 		for _, e := range ue.Unwrap() {
-			if v, ok := Get(e, key); ok {
+			if v, ok := Get[T](e, key); ok {
 				return v, ok
 			}
 		}

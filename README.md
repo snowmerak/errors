@@ -1,1 +1,3 @@
-# github.com/snowmerak/errors
+# errors
+
+
